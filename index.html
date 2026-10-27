@@ -37,8 +37,8 @@ canvas{display:block;width:100%;height:100%;}
 .pad:focus-visible,.btn:focus-visible{outline:4px solid var(--pop);outline-offset:3px;}
 @media (hover:hover) and (pointer:fine){.pads{display:none;}}
 .screen[hidden]{display:none;}
-.screen{position:absolute;inset:0;display:grid;place-items:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:rgba(127,211,255,.55);}
-.card{background:var(--card);border-radius:28px;box-shadow:0 10px 0 var(--shadow);padding:22px 26px;text-align:center;max-width:460px;width:100%;}
+.screen{position:absolute;inset:0;display:grid;grid-template-columns:minmax(0,1fr);justify-items:center;place-items:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:rgba(127,211,255,.55);}
+.card{box-sizing:border-box;min-width:0;background:var(--card);border-radius:28px;box-shadow:0 10px 0 var(--shadow);padding:22px 26px;text-align:center;max-width:460px;width:100%;}
 .card h1{font-size:clamp(38px,9vw,64px);line-height:1;margin:0 0 6px;color:var(--pop);text-wrap:balance;text-shadow:0 4px 0 #ffd0de;}
 .card p{font-size:clamp(17px,3.6vw,21px);margin:6px 0;line-height:1.3;}
 .rows{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin:12px 0;font-size:clamp(17px,3.6vw,21px);}
@@ -46,11 +46,19 @@ canvas{display:block;width:100%;height:100%;}
 .rows b{font-size:clamp(30px,7vw,42px);line-height:1.1;}
 .rows small{font-size:15px;font-weight:700;}
 .qh{font-size:clamp(32px,8vw,52px)!important;}
-.eq{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px 12px;margin:12px 0;font-size:clamp(26px,6.5vw,38px);line-height:1.2;}
-.eq .grp{display:inline-flex;flex-wrap:wrap;justify-content:center;max-width:9.5em;background:rgba(127,211,255,.18);border-radius:16px;padding:4px 8px;}
-.eq b{font-size:1.1em;}
-.eq .tail{display:inline-flex;gap:12px;white-space:nowrap;}
-.eq .qm{color:var(--pop);min-width:1.2em;}
+.qtext{font-size:clamp(15px,3.4vw,18px)!important;opacity:.85;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
+.replay{border:0;background:var(--sky-low);border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer;box-shadow:0 3px 0 var(--shadow);}
+.replay:focus-visible{outline:4px solid var(--pop);outline-offset:2px;}
+.eq{direction:ltr;display:flex;justify-content:center;align-items:flex-start;gap:clamp(4px,2vw,14px);margin:14px 0 6px;}
+.eq .term{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.eq .num{display:grid;place-items:center;width:clamp(54px,14vw,76px);height:clamp(54px,14vw,76px);border-radius:50%;color:#fff;font:700 clamp(36px,10vw,56px)/1 var(--font-play);box-shadow:0 4px 0 var(--shadow);}
+.eq .na{background:#3a8fd9;}
+.eq .nb{background:#9b5de5;}
+.eq .num.qm{background:var(--card);color:var(--pop);border:4px dashed var(--pop);box-shadow:none;}
+.eq .num.qm.done{background:var(--leaf);color:#fff;border-color:var(--leaf);}
+.eq .op{font:700 clamp(34px,9vw,52px)/1 var(--font-play);height:clamp(54px,14vw,76px);display:grid;place-items:center;color:var(--ink);}
+.eq .grp{display:grid;grid-template-columns:repeat(var(--cols),auto);gap:2px;justify-content:center;background:rgba(127,211,255,.2);border-radius:14px;padding:4px 6px;font-size:clamp(18px,4.8vw,30px);line-height:1.15;}
+.eq .grp i{font-style:normal;}
 .answers{direction:ltr;display:flex;justify-content:center;gap:clamp(10px,4vw,22px);margin-top:10px;}
 .ans{width:clamp(70px,20vw,96px);height:clamp(70px,20vw,96px);border-radius:24px;border:0;background:var(--sun);color:var(--ink);font:700 clamp(34px,9vw,48px)/1 var(--font-play);box-shadow:0 6px 0 var(--shadow);cursor:pointer;}
 .ans:active{transform:translateY(4px);box-shadow:0 2px 0 var(--shadow);}
@@ -474,17 +482,24 @@ function showQuiz(){
   const phrase=(n,f)=>n===1?QNAME[f.n][0]:`${n} ${QNAME[f.n][1]}`;
   const q=`${phrase(a,A)} ועוד ${phrase(b,B)}`;
   cardBody.innerHTML=`<h1 class="qh">תרגיל קטן!</h1>
-    <p>${q}. כמה זה ביחד?</p>
-    <div class="eq"><span class="grp">${A.e.repeat(a)}</span><b>+</b><span class="grp">${B.e.repeat(b)}</span><span class="tail"><b>=</b><b class="qm">?</b></span></div>
+    <p class="qtext">${q}. כמה זה ביחד? <button class="replay" id="replay" aria-label="לשמוע שוב">🔊</button></p>
+    <div class="eq">
+      <div class="term"><span class="num na">${a}</span><span class="grp" style="--cols:${Math.min(a,3)}">${[...Array(a)].map(()=>`<i>${A.e}</i>`).join('')}</span></div>
+      <b class="op">+</b>
+      <div class="term"><span class="num nb">${b}</span><span class="grp" style="--cols:${Math.min(b,3)}">${[...Array(b)].map(()=>`<i>${B.e}</i>`).join('')}</span></div>
+      <b class="op">=</b>
+      <div class="term"><span class="num qm">?</span></div>
+    </div>
     <div class="answers">${answers.map(v=>`<button class="ans" data-v="${v}">${v}</button>`).join('')}</div>
     <p class="hint" id="qhint">&nbsp;</p>`;
   screen.hidden=false;startBtn=null;
-  say(q+'. כמה זה ביחד?',true);
+  const ask=()=>say(q+'. כמה זה ביחד?',true);ask();
+  document.getElementById('replay').addEventListener('click',ask);
   const btns=[...cardBody.querySelectorAll('.ans')];btns[0].focus();
   let done=false;
   btns.forEach(bt=>bt.addEventListener('click',()=>{
     if(done||bt.disabled)return;
-    if(+bt.dataset.v===sum){done=true;bt.classList.add('right');cardBody.querySelector('.qm').textContent=sum;
+    if(+bt.dataset.v===sum){done=true;bt.classList.add('right');const qm=cardBody.querySelector('.qm');qm.textContent=sum;qm.classList.add('done');
       document.getElementById('qhint').textContent='נכון! כל הכבוד!';sfx.win();say('נכון! '+q+' זה '+sum+'! כל הכבוד!',true);
       setTimeout(()=>show('win'),2300);}
     else{bt.disabled=true;bt.classList.add('wrong');sfx.yuck();
