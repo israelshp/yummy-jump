@@ -6,6 +6,7 @@ Collect the yummy food (🥑 avocado, 🍫 chocolate, 🍝 pasta, 🍌 bananas),
 ## How to play
 - **Computer:** arrow keys to move, Space or ↑ to jump.
 - **Phone / tablet:** big on-screen buttons.
+- The game talks in Hebrew (computer voice). Tap 🗣️ to turn talking on or off.
 - Reach the pink flag to finish the level. Each level is a bit longer.
 
 ## Run it
