@@ -7,7 +7,7 @@ Collect the yummy food (🥑 avocado, 🍫 chocolate, 🍝 pasta, 🍌 bananas),
 - **Computer:** arrow keys to move, Space or ↑ to jump.
 - **Phone / tablet:** big on-screen buttons.
 - The game talks in Hebrew (computer voice). Tap 🗣️ to turn talking on or off.
-- Reach the pink flag to finish the level. Each level is a bit longer.
+- Reach the pink flag, then solve a small addition question (up to 10) to finish the level. Each level is a bit longer.
 
 ## Run it
 It's a single self-contained `index.html`, so just open it in a browser.
