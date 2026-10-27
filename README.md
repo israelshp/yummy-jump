@@ -1,7 +1,7 @@
 # קפיצה טעימה (Yummy Jump)
 
 A joyful platform game for young kids, starring Shachar.
-Collect the yummy food (🥑 avocado, 🍫 chocolate, 🍝 pasta, 🍌 bananas), jump over the yucky food (🧅 onion, 🥦 broccoli, 🍣 sushi), and hug Mom to fill your hearts back up.
+Collect the yummy food (🥑 avocado, 🍫 chocolate, 🍝 pasta, 🍌 bananas), jump over the yucky food (🧅 onion, 🥦 broccoli, 🍣 sushi), hug Mom to fill your hearts back up, and visit your baby sister for 2 bonus hearts.
 
 ## How to play
 - **Computer:** arrow keys to move, Space or ↑ to jump.
