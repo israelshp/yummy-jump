@@ -22,6 +22,7 @@ canvas{display:block;width:100%;height:100%;}
 .hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
   padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none;}
 .pill{background:var(--card);border-radius:999px;padding:4px 14px;box-shadow:0 4px 0 var(--shadow);font-weight:700;font-size:clamp(16px,3.2vw,24px);display:flex;gap:10px;align-items:center;font-variant-numeric:tabular-nums;}
+.toast{position:absolute;top:calc(70px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);box-sizing:border-box;background:var(--card);color:var(--ink);border-radius:18px;padding:8px 16px;box-shadow:0 4px 0 var(--shadow);font-weight:700;font-size:clamp(14px,3.4vw,18px);text-align:center;pointer-events:none;}
 .talk{pointer-events:auto;border:0;cursor:pointer;font:inherit;font-size:clamp(16px,3.2vw,24px);color:var(--ink);padding:4px 12px;}
 .talk[aria-pressed="false"]{opacity:.45;text-decoration:line-through;}
 .talk:focus-visible{outline:4px solid var(--pop);outline-offset:3px;}
@@ -83,6 +84,7 @@ canvas{display:block;width:100%;height:100%;}
     <button class="pill talk" id="talk" aria-pressed="true" aria-label="דיבור">🗣️</button>
     <div class="pill" id="score"></div>
   </div>
+  <div class="toast" id="toast" role="status" hidden></div>
   <div class="pads">
     <div class="group">
       <button class="pad" id="padL" aria-label="שמאלה">◀</button>
@@ -116,19 +118,37 @@ const sfx={yum:()=>beep([660,880,1100]),jump:()=>beep([400,600],.07,'square',.06
 /* ---------- talking (Hebrew computer voice) ---------- */
 const FOODNAME={avocado:'אבוקדו',chocolate:'שוקולד',pasta:'פסטה',banana:'בננה'};
 const BADNAME={'🧅':'בצל','🥦':'ברוקולי','🍣':'סושי'};
-let talkOn=true, heVoice=null, voicesSeen=false;
+let talkOn=true, heVoice=null, voicesSeen=false, lastSpeak=0, curUtter=null, warned=false;
 try{if(localStorage.getItem('yj-talk')==='0')talkOn=false;}catch(e){}
-function pickVoice(){try{const vs=speechSynthesis.getVoices();if(vs.length)voicesSeen=true;heVoice=vs.find(v=>/^he|^iw/i.test(v.lang))||null;}catch(e){}}
-try{pickVoice();speechSynthesis.addEventListener('voiceschanged',pickVoice);}catch(e){}
-function say(text,important){
-  if(!talkOn||!('speechSynthesis' in window))return;
-  if(voicesSeen&&!heVoice)return; // no Hebrew voice on this device: stay quiet rather than mispronounce
-  try{
-    if(speechSynthesis.speaking||speechSynthesis.pending){if(!important)return;speechSynthesis.cancel();}
-    const u=new SpeechSynthesisUtterance(text);u.lang='he-IL';if(heVoice)u.voice=heVoice;u.rate=1.05;u.pitch=1.25;u.volume=1;
-    speechSynthesis.speak(u);
+function pickVoice(){
+  try{const vs=speechSynthesis.getVoices();if(vs.length)voicesSeen=true;
+    const he=vs.filter(v=>/^(he|iw)\b/i.test(v.lang));
+    heVoice=he.find(v=>/natural|online/i.test(v.name))||he[0]||null;   // Edge's online Hebrew voices sound best
   }catch(e){}
 }
+try{pickVoice();speechSynthesis.addEventListener('voiceschanged',pickVoice);}catch(e){}
+function noHebrew(){return voicesSeen&&!heVoice;}
+function warnNoVoice(){
+  if(warned||!talkOn||!noHebrew())return;warned=true;
+  toast('אין במחשב הזה קול בעברית, אז הדיבור לא יישמע');
+  console.info('[Yummy Jump] No Hebrew speech voice on this device. Voices found:',speechSynthesis.getVoices().map(v=>v.name+' ('+v.lang+')'));
+}
+function say(text,important){
+  if(!talkOn||!('speechSynthesis' in window))return;
+  if(!heVoice)pickVoice();                       // voices may have arrived since the last check
+  if(noHebrew()){warnNoVoice();return;}           // stay quiet rather than mispronounce with a foreign voice
+  try{
+    const busy=speechSynthesis.speaking||speechSynthesis.pending;
+    const stuck=busy&&performance.now()-lastSpeak>8000;  // Chrome sometimes never clears "speaking"
+    if(busy){if(!important&&!stuck)return;speechSynthesis.cancel();}
+    const u=new SpeechSynthesisUtterance(text);u.lang='he-IL';if(heVoice)u.voice=heVoice;u.rate=1.05;u.pitch=1.25;u.volume=1;
+    curUtter=u;                                    // keep a reference so Chrome doesn't drop it mid-sentence
+    u.onend=u.onerror=()=>{if(curUtter===u)curUtter=null;};
+    lastSpeak=performance.now();speechSynthesis.speak(u);
+  }catch(e){}
+}
+let toastT=0;
+function toast(msg){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true;},5000);}
 function pick(a){return a[Math.floor(Math.random()*a.length)];}
 
 /* ---------- level ---------- */
@@ -181,7 +201,7 @@ function pad(id,k){const b=document.getElementById(id);
 const talkBtn=document.getElementById('talk');
 function syncTalk(){talkBtn.setAttribute('aria-pressed',talkOn?'true':'false');talkBtn.title=talkOn?'דיבור פועל':'דיבור כבוי';}
 syncTalk();talkBtn.addEventListener('click',e=>{e.stopPropagation();talkOn=!talkOn;try{localStorage.setItem('yj-talk',talkOn?'1':'0');}catch(_){}
-  syncTalk();if(talkOn)say('שלום שחר!',true);else{try{speechSynthesis.cancel();}catch(_){}}talkBtn.blur();});
+  syncTalk();if(talkOn){warned=false;say('שלום שחר!',true);}else{try{speechSynthesis.cancel();}catch(_){}}talkBtn.blur();});
 pad('padL','l');pad('padR','r');pad('padJ','j');
 
 /* ---------- update ---------- */
